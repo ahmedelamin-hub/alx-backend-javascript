@@ -1,9 +1,10 @@
 const http = require('http');
 const fs = require('fs').promises;
-const path = require('path');
 
+// Define the port the server will listen on
 const PORT = 1245;
 
+// Function to count students and generate the output message
 const countStudents = async (databasePath) => {
   try {
     const data = await fs.readFile(databasePath, 'utf8');
@@ -39,6 +40,7 @@ const countStudents = async (databasePath) => {
   }
 };
 
+// Create the HTTP server
 const app = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const pathName = url.pathname;
@@ -68,8 +70,10 @@ const app = http.createServer(async (req, res) => {
   }
 });
 
+// Start the server
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}/`);
 });
 
+// Export the app variable
 module.exports = app;
