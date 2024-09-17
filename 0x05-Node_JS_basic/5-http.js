@@ -8,7 +8,7 @@ const PORT = 1245;
 const countStudents = async (databasePath) => {
   try {
     const data = await fs.readFile(databasePath, 'utf8');
-    const lines = data.trim().split('\n').filter(line => line.length > 0);
+    const lines = data.trim().split('\n').filter((line) => line.length > 0);
 
     if (lines.length <= 1) {
       return 'Cannot load the database';
