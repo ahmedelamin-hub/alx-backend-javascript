@@ -1,72 +1,51 @@
 import express from 'express';
 import fs from 'fs';
-import { promisify } from 'util';
-import path from 'path';
-
-// Promisified readFile
-const readFileAsync = promisify(fs.readFile);
 
 const app = express();
+const port = 1245;
 
-// Function to read and process the CSV database
-const readDatabase = async (filePath) => {
-  try {
-    const content = await readFileAsync(filePath, { encoding: 'utf-8' });
-    const lines = content.split('\n').filter((line) => line.trim() !== '');
-    
-    const fields = {};
-    let totalStudents = 0;
-    
-    for (let i = 1; i < lines.length; i++) {
-      const student = lines[i].split(',');
-      const field = student[3];
-      const firstName = student[0];
-      
-      if (!fields[field]) {
-        fields[field] = [];
+function readStudentData(database) {
+  return new Promise((resolve, reject) => {
+    fs.readFile(database, 'utf-8', (err, data) => {
+      if (err) {
+        reject(new Error('Cannot load the database'));
+      } else {
+        const lines = data.split('\n').filter((line) => line.trim() !== '');
+        const students = lines.slice(1).map((line) => line.split(','));
+        const studentCount = students.length;
+        const csStudents = students.filter((student) => student[3] === 'CS');
+        const sweStudents = students.filter((student) => student[3] === 'SWE');
+
+        const output = [
+          `Number of students: ${studentCount}`,
+          `Number of students in CS: ${csStudents.length}. List: ${csStudents.map((s) => s[0]).join(', ')}`,
+          `Number of students in SWE: ${sweStudents.length}. List: ${sweStudents.map((s) => s[0]).join(', ')}`,
+        ].join('\n');
+
+        resolve(output);
       }
-      
-      fields[field].push(firstName);
-      totalStudents++;
-    }
+    });
+  });
+}
 
-    return { totalStudents, fields };
-  } catch (error) {
-    throw new Error('Cannot load the database');
-  }
-};
-
-// Route: "/"
 app.get('/', (req, res) => {
   res.send('Hello Holberton School!');
 });
 
-// Route: "/students"
-app.get('/students', async (req, res) => {
-  const databaseFile = process.argv[2];
+app.get('/students', (req, res) => {
+  const databaseFile = process.argv[2]; // Get the database file from the command line argument
 
-  try {
-    const { totalStudents, fields } = await readDatabase(databaseFile);
-    
-    let response = 'This is the list of our students\n';
-    response += `Number of students: ${totalStudents}\n`;
-    
-    Object.keys(fields)
-      .sort((a, b) => a.localeCompare(b)) // Sort fields alphabetically
-      .forEach((field) => {
-        const list = fields[field].join(', ');
-        response += `Number of students in ${field}: ${fields[field].length}. List: ${list}\n`;
-      });
-    
-    res.send(response.trim());
-  } catch (error) {
-    res.status(500).send(error.message);
-  }
+  readStudentData(databaseFile)
+    .then((studentData) => {
+      res.send(`This is the list of our students\n${studentData}`);
+    })
+    .catch((error) => {
+      res.send(`This is the list of our students\n${error.message}`);
+    });
 });
 
-// Start the server on port 1245
-app.listen(1245, () => {
-  console.log('Server is running on port 1245');
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
 });
 
 export default app;
